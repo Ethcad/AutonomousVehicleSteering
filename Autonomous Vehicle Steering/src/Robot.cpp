@@ -27,35 +27,25 @@ public:
 	 */
 	void OperatorControl() {
 		CANTalon *talon = new CANTalon(0);
+		Joystick *joy = new Joystick(0);
 		talon->SetEncPosition(0);
-		talon->SetFeedbackDevice(CANTalon::CtreMagEncoder_Relative);
-		talon->SetSensorDirection(false);
+		talon->SetFeedbackDevice(CANTalon::QuadEncoder);
+		talon->ConfigEncoderCodesPerRev(1024);
+		talon->SetSensorDirection(true);
 		talon->ConfigNominalOutputVoltage(0, 0);
-		talon->ConfigPeakOutputVoltage(12, 12);
-		talon->SelectProfileSlot(0);
+		talon->ConfigPeakOutputVoltage(12, -12);
 		talon->SetAllowableClosedLoopErr(0);
+		talon->SetControlMode(CANSpeedController::kPosition);
 		talon->SetF(0.0);
 		talon->SetP(0.1);
-		talon->SetI(0.0);
+		talon->SetI(0.001);
 		talon->SetD(0.0);
-		talon->SetControlMode(CANSpeedController::ControlMode::kPosition);
-		//talon->Set(0.5);
-		talon->SetEncPosition(1000);
 
 		while (IsOperatorControl() && IsEnabled()) {
-			/* Set the motor controller's output. This takes a number from -1
-			 * (100% speed in reverse) to +1 (100% speed forwards).
-			 */
-
-			talon->SetControlMode(CANSpeedController::ControlMode::kPosition);
-			std::cout << talon->GetEncPosition() << std::endl;
-
-//			if (abs(t->GetEncPosition()) < 300000)
-//				t->Set(0.2);
-//			else
-//				t->Set(0);
-			//m_motor.Set(0.1); //m_stick.GetY());
-
+			double leftYStick = joy->GetAxis(Joystick::kYAxis);
+			talon->Set(leftYStick * 2.0);
+			std::cout << "Position: " << talon->GetPosition() << ", EncPosition: " << talon->GetEncPosition() << std::endl;
+			std::cout << "Joystick position: " << leftYStick;
 			frc::Wait(kUpdatePeriod);  // Wait 5ms for the next update.
 		}
 	}
