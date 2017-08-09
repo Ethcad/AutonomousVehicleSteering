@@ -5,6 +5,9 @@
 #include <wpilib.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <fstream>
+
+using namespace std;
 
 /**
  * This sample program shows how to control a motor using a joystick. In the
@@ -41,11 +44,21 @@ public:
 		talon->SetI(0.001);
 		talon->SetD(0.0);
 
+
+
+
 		while (IsOperatorControl() && IsEnabled()) {
 			double leftYStick = joy->GetAxis(Joystick::kYAxis);
-			talon->Set(leftYStick * 2.0);
-			std::cout << "Position: " << talon->GetPosition() << ", EncPosition: " << talon->GetEncPosition() << std::endl;
-			std::cout << "Joystick position: " << leftYStick;
+			//talon->Set(leftYStick * 2.0);
+			talon->Set(2.0);
+			cout << "Position: " << talon->GetPosition() << ", EncPosition: " << talon->GetEncPosition() << endl;
+			cout << "Joystick position: " << leftYStick;
+			ofstream encValFile;
+			encValFile.open("/home/lvuser/temp.encval", ios::out | ios::app);
+			encValFile << talon->GetEncPosition();
+			encValFile.close();
+			system("rm /home/lvuser/latest.encval");
+			system("mv /home/lvuser/temp.encval /home/lvuser/latest.encval");
 			frc::Wait(kUpdatePeriod);  // Wait 5ms for the next update.
 		}
 	}
