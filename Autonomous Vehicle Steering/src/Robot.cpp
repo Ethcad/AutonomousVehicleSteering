@@ -16,7 +16,7 @@ class Robot: public frc::SampleRobot {
 public:
 	void OperatorControl() {
 		CANTalon *talon = new CANTalon(0);
-		talon->SetFeedbackDevice(CANTalon::QuadEncoder);
+		talon->SetFeedbackDevice(CANTalon::PulseWidth);
 		talon->ConfigEncoderCodesPerRev(1024);
 		talon->SetSensorDirection(true);
 		talon->ConfigNominalOutputVoltage(0, 0);
@@ -32,8 +32,11 @@ public:
 		else
 			talon->ConfigPeakOutputVoltage(12, -12);
 
+		double position = 0;
+
 		while (IsOperatorControl() && IsEnabled()) {
-			talon->Set(0);
+			position += 0.05;
+			talon->Set(position);
 			cout << "Position: " << talon->GetPosition() << endl;
 			cout << "EncPosition: " << talon->GetEncPosition() << endl;
 			ofstream encValFile;
