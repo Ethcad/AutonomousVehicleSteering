@@ -7,32 +7,15 @@
 #include <stdio.h>
 #include <fstream>
 
-#define TRAINING_MODE true
+#define TRAINING_MODE false
 
 using namespace std;
-
-/**
- * This sample program shows how to control a motor using a joystick. In the
- * operator control part of the program, the joystick is read and the value is
- * written to the motor.
- *
- * Joystick analog values range from -1 to 1 and speed controller inputs as
- * range from -1 to 1 making it easy to work together. The program also delays a
- * short time in the loop to allow other threads to run. This is generally a
- * good idea, especially since the joystick values are only transmitted from the
- * Driver Station once every 20ms.
- */
 
 
 class Robot: public frc::SampleRobot {
 public:
-
-	/**
-	 * Runs the motor from the output of a Joystick.
-	 */
 	void OperatorControl() {
 		CANTalon *talon = new CANTalon(0);
-		talon->SetEncPosition(0);
 		talon->SetFeedbackDevice(CANTalon::QuadEncoder);
 		talon->ConfigEncoderCodesPerRev(1024);
 		talon->SetSensorDirection(true);
@@ -50,7 +33,7 @@ public:
 			talon->ConfigPeakOutputVoltage(12, -12);
 
 		while (IsOperatorControl() && IsEnabled()) {
-			talon->Set(2.0);
+			talon->Set(0);
 			cout << "Position: " << talon->GetPosition() << endl;
 			cout << "EncPosition: " << talon->GetEncPosition() << endl;
 			ofstream encValFile;
