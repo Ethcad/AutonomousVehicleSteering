@@ -7,6 +7,8 @@
 #include <stdio.h>
 #include <fstream>
 
+#define TRAINING_MODE true
+
 using namespace std;
 
 /**
@@ -30,13 +32,11 @@ public:
 	 */
 	void OperatorControl() {
 		CANTalon *talon = new CANTalon(0);
-		Joystick *joy = new Joystick(0);
 		talon->SetEncPosition(0);
 		talon->SetFeedbackDevice(CANTalon::QuadEncoder);
 		talon->ConfigEncoderCodesPerRev(1024);
 		talon->SetSensorDirection(true);
 		talon->ConfigNominalOutputVoltage(0, 0);
-		talon->ConfigPeakOutputVoltage(12, -12);
 		talon->SetAllowableClosedLoopErr(0);
 		talon->SetControlMode(CANSpeedController::kPosition);
 		talon->SetF(0.0);
@@ -44,18 +44,18 @@ public:
 		talon->SetI(0.001);
 		talon->SetD(0.0);
 
-
-
+		if (TRAINING_MODE)
+			talon->ConfigPeakOutputVoltage(0, 0);
+		else
+			talon->ConfigPeakOutputVoltage(12, -12);
 
 		while (IsOperatorControl() && IsEnabled()) {
-			double leftYStick = joy->GetAxis(Joystick::kYAxis);
-			//talon->Set(leftYStick * 2.0);
 			talon->Set(2.0);
-			cout << "Position: " << talon->GetPosition() << ", EncPosition: " << talon->GetEncPosition() << endl;
-			cout << "Joystick position: " << leftYStick;
+			cout << "Position: " << talon->GetPosition() << endl;
+			cout << "EncPosition: " << talon->GetEncPosition() << endl;
 			ofstream encValFile;
 			encValFile.open("/home/lvuser/temp.encval", ios::out | ios::app);
-			encValFile << talon->GetEncPosition();
+			encValFile << "out" << talon->GetPosition();
 			encValFile.close();
 			system("rm /home/lvuser/latest.encval");
 			system("mv /home/lvuser/temp.encval /home/lvuser/latest.encval");
