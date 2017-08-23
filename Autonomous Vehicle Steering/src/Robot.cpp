@@ -54,6 +54,10 @@ private:
 	Relay *jetsonActiveRelay = new Relay(1);
 	Relay *recordingEnabledRelay = new Relay(2);
 
+	// Counter that ensures the relay doesn't flip on and off with every frame
+	const unsigned int jetsonInactiveTimeOut = 20;
+	unsigned int jetsonInactiveTimer = 0;
+
 	void CenterSteeringWheel(CANTalon *talon) {
 		// It is assumed that the wheel starts turned to the maximum in the negative direction
 		talon->SetPosition(-ROTATIONS_FROM_MIN_ANGLE_TO_CENTER); // Orient the steering system so that zero lies in the center
@@ -118,8 +122,16 @@ private:
 		}
 
 		// Set the relays according to the values for return
-		SetRelay(jetsonActiveRelay, jetsonActive);
 		SetRelay(recordingEnabledRelay, recordingEnabled);
+
+		if (jetsonActive) {
+			SetRelay(jetsonActiveRelay, true);
+			jetsonInactiveTimer = 0; // Reset the counter
+		} else {
+			jetsonInactiveTimer++; // Increment the timer
+			if (jetsonInactiveTimer > jetsonInactiveTimeOut) // If we have tried to read the file jetsonInactiveTimeOut times without success
+				SetRelay(jetsonActiveRelay, false); // Turn off the jetsonActiveRelay LED
+		}
 
 		return make_tuple(jetsonActive, recordingEnabled, autoDrive, steeringAngle);
 	}
