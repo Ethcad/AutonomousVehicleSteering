@@ -41,7 +41,7 @@ public:
 			cout << "Position: " << talon->GetPosition() << endl;
 			cout << "EncPosition: " << talon->GetEncPosition() << endl;
 			UpdatePositionFile(talon->GetPosition());
-			auto values = ReadValuesFromJetson();
+			auto values = ReadValuesFromJetsonAndSetRelays();
 			bool jetsonEnabled = get<0>(values);
 			double steeringAngle = get<3>(values);
 			if (jetsonEnabled)
@@ -50,6 +50,10 @@ public:
 	}
 
 private:
+	// Initialize the relays connected to the LEDs
+	Relay *jetsonActiveRelay = new Relay(1);
+	Relay *recordingEnabledRelay = new Relay(2);
+
 	void CenterSteeringWheel(CANTalon *talon) {
 		// It is assumed that the wheel starts turned to the maximum in the negative direction
 		talon->SetPosition(-ROTATIONS_FROM_MIN_ANGLE_TO_CENTER); // Orient the steering system so that zero lies in the center
@@ -72,7 +76,7 @@ private:
 		system("mv /home/lvuser/temp.encval /home/lvuser/latest.encval");
 	}
 
-	tuple<bool, bool, bool, double> ReadValuesFromJetson() {
+	tuple<bool, bool, bool, double> ReadValuesFromJetsonAndSetRelays() {
 		// Values for return
 		bool jetsonActive; // Is the Jetson alive and working?
 		bool recordingEnabled; // Is the Jetson recording encoder values?
@@ -113,7 +117,17 @@ private:
 			cout << "File error caught" << endl;
 		}
 
+		// Set the relays according to the values for return
+		SetRelay(jetsonActiveRelay, jetsonActive);
+		SetRelay(recordingEnabledRelay, recordingEnabled);
+
 		return make_tuple(jetsonActive, recordingEnabled, autoDrive, steeringAngle);
+	}
+
+	void SetRelay(Relay *relay, bool on) {
+		// Turn an arbitrary relay on or off
+		auto relayValue = on ? Relay::Value::kOn : Relay::Value::kOff;
+		relay->Set(relayValue);
 	}
 };
 
