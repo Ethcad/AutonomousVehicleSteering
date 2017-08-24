@@ -10,8 +10,8 @@
 
 using namespace std;
 
-const bool TRAINING_MODE = false;
-const double ROTATIONS_FROM_MIN_ANGLE_TO_CENTER = 0.8; // How far the motor rotates to turn the wheel to center
+const bool TRAINING_MODE = true;
+const double ROTATIONS_FROM_MIN_ANGLE_TO_CENTER = 8.0; // How far the motor rotates to turn the wheel to center
 const unsigned int MICROSECONDS_FOR_CALIBRATION_STEP = 3000000;
 
 class Robot: public frc::SampleRobot {
@@ -23,16 +23,18 @@ public:
 		talon->ConfigEncoderCodesPerRev(10240); // One rotation, after the 10:1 gearbox
 		talon->SetSensorDirection(true);
 		talon->ConfigNominalOutputVoltage(0, 0);
-		talon->ConfigPeakOutputVoltage(3, -3);
+		talon->ConfigPeakOutputVoltage(12, -12);
 		talon->SetAllowableClosedLoopErr(0);
 		talon->SetControlMode(CANSpeedController::kPosition); // Use integrated PID
-		talon->SetF(0.0);
+		talon->SetF(0);
 		talon->SetP(0.1);
-		talon->SetI(0.001);
-		talon->SetD(0.0);
+		talon->SetI(0);
+		talon->SetD(0);
+
 
 		if (TRAINING_MODE) {
 			// Center the steering wheel, then disable the motor (but not the encoder)
+			talon->ConfigPeakOutputVoltage(2.5, -2.5);
 			CenterSteeringWheel(talon);
 			talon->ConfigPeakOutputVoltage(0, 0);
 		}
@@ -41,11 +43,12 @@ public:
 			cout << "Position: " << talon->GetPosition() << endl;
 			cout << "EncPosition: " << talon->GetEncPosition() << endl;
 			UpdatePositionFile(talon->GetPosition());
-			auto values = ReadValuesFromJetsonAndSetRelays();
-			bool jetsonEnabled = get<0>(values);
-			double steeringAngle = get<3>(values);
-			if (jetsonEnabled)
-				talon->Set(steeringAngle / 100);
+			ReadValuesFromJetsonAndSetRelays();
+//			auto values = ReadValuesFromJetsonAndSetRelays();
+//			bool jetsonEnabled = get<0>(values);
+//			double steeringAngle = get<3>(values);
+//			if (jetsonEnabled)
+//				talon->Set(steeringAngle / 100);
 		}
 	}
 
@@ -62,6 +65,7 @@ private:
 		// It is assumed that the wheel starts turned to the maximum in the negative direction
 		talon->SetPosition(-ROTATIONS_FROM_MIN_ANGLE_TO_CENTER); // Orient the steering system so that zero lies in the center
 		double almostMaxAngle = 1.9 * ROTATIONS_FROM_MIN_ANGLE_TO_CENTER;
+		usleep(MICROSECONDS_FOR_CALIBRATION_STEP);
 		talon->Set(almostMaxAngle); // Turn almost to the maximum in the positive direction
 		usleep(MICROSECONDS_FOR_CALIBRATION_STEP); // Wait for the movement to complete
 		talon->Set(0); // Turn back to the center
@@ -137,7 +141,7 @@ private:
 	}
 
 	void SetRelay(Relay *relay, bool on) {
-		// Turn an arbitrary relay on or off
+		// Turn an arbitrary relay on or off, inverted because kOn is the default
 		auto relayValue = on ? Relay::Value::kOn : Relay::Value::kOff;
 		relay->Set(relayValue);
 	}
