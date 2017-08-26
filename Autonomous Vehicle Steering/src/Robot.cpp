@@ -11,7 +11,7 @@
 using namespace std;
 
 const bool TRAINING_MODE = true;
-const double ROTATIONS_FROM_MIN_ANGLE_TO_CENTER = 8.0; // How far the motor rotates to turn the wheel to center
+const double ROTATIONS_FROM_MIN_ANGLE_TO_CENTER = 0.3; // How far the motor rotates to turn the wheel to center
 const unsigned int MICROSECONDS_FOR_CALIBRATION_STEP = 3000000;
 
 class Robot: public frc::SampleRobot {
@@ -31,11 +31,11 @@ public:
 		talon->SetI(0);
 		talon->SetD(0);
 
-
 		if (TRAINING_MODE) {
 			// Center the steering wheel, then disable the motor (but not the encoder)
-			talon->ConfigPeakOutputVoltage(2.5, -2.5);
-			CenterSteeringWheel(talon);
+			talon->ConfigPeakOutputVoltage(4.5, -4.5);
+			bool calibrationSucceeded = CalibrateSteeringWheel(talon);
+			cout << calibrationSucceeded << endl;
 			talon->ConfigPeakOutputVoltage(0, 0);
 		}
 
@@ -61,15 +61,20 @@ private:
 	const unsigned int jetsonInactiveTimeOut = 20;
 	unsigned int jetsonInactiveTimer = 0;
 
-	void CenterSteeringWheel(CANTalon *talon) {
+	bool CalibrateSteeringWheel(CANTalon *talon) {
 		// It is assumed that the wheel starts turned to the maximum in the negative direction
-		talon->SetPosition(-ROTATIONS_FROM_MIN_ANGLE_TO_CENTER); // Orient the steering system so that zero lies in the center
-		double almostMaxAngle = 1.9 * ROTATIONS_FROM_MIN_ANGLE_TO_CENTER;
+		talon->SetPosition(ROTATIONS_FROM_MIN_ANGLE_TO_CENTER); // Orient the steering system so that zero lies in the center
+		double almostMaxAngle = 0.9 * ROTATIONS_FROM_MIN_ANGLE_TO_CENTER;
 		usleep(MICROSECONDS_FOR_CALIBRATION_STEP);
 		talon->Set(almostMaxAngle); // Turn almost to the maximum in the positive direction
+
+		if (abs(talon->Get() - almostMaxAngle) > 0.03) // If we are too far off the desired limit angle
+			return false; // Return failure
+
 		usleep(MICROSECONDS_FOR_CALIBRATION_STEP); // Wait for the movement to complete
 		talon->Set(0); // Turn back to the center
 		usleep(MICROSECONDS_FOR_CALIBRATION_STEP); // Wait for the wheel to center before continuing
+		return true;
 	}
 
 	void UpdatePositionFile(double talonPosition) {
