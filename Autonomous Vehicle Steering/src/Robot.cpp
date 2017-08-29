@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <fstream>
+#include <algorithm>
 
 using namespace std;
 
@@ -85,11 +86,10 @@ private:
 		// Save the current motor position prefixed with "out" to a temp file, to be read by the Jetson
 		ofstream encValFile;
 		encValFile.open("/home/lvuser/temp.encval", ios::out | ios::app);
-		encValFile << "out" << talonPosition;
+		encValFile << "out" << talonPosition << "\r\n";
 		encValFile.close();
 
-		// Delete the old file and replace it with the current temp file
-		system("rm /home/lvuser/latest.encval");
+		// Overwrite the old file with the current temp file
 		system("mv /home/lvuser/temp.encval /home/lvuser/latest.encval");
 	}
 
@@ -116,7 +116,7 @@ private:
 
 			// Place lines of file into array
 			string line;
-			for (int i = 0; getline(inFile, line); i++) {
+			for (int i = 0; getline(inFile, line, ' '); i++) {
 				cout << line << endl;
 				values[i] = line;
 			}
