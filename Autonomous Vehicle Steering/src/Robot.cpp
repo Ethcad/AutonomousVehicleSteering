@@ -11,9 +11,9 @@
 
 using namespace std;
 
-const bool TRAINING_MODE = true;
 const double ROTATIONS_FROM_MIN_ANGLE_TO_CENTER = 0.37; // How far the motor rotates to turn the wheel to center
-const unsigned int MICROSECONDS_FOR_CALIBRATION_STEP = 3000000;
+const unsigned int MICROSECONDS_FOR_CALIBRATION_STEP = 3000000; // Microseconds to wait between movements
+const double POSITION_LIMIT_ROTATIONS = 0.15; // How far in either direction the motor is allowed to rotate
 
 class Robot: public frc::SampleRobot {
 public:
@@ -30,7 +30,6 @@ public:
 		talon->ConfigEncoderCodesPerRev(10240); // One rotation, after the 10:1 gearbox
 		talon->SetSensorDirection(true);
 		talon->ConfigNominalOutputVoltage(0, 0);
-		talon->ConfigPeakOutputVoltage(12, -12);
 		talon->SetAllowableClosedLoopErr(0);
 		talon->SetControlMode(CANSpeedController::kPosition); // Use integrated PID
 		talon->SetF(0);
@@ -52,7 +51,18 @@ public:
 			cout << "Position: " << talon->GetPosition() << endl;
 			cout << "EncPosition: " << talon->GetEncPosition() << endl;
 			UpdatePositionFile(talon->GetPosition());
-			ReadSteeringAngleFromJetsonAndSetRelays();
+
+			// Get a boolean saying whether the steering angle should be used, followed by the steering angle
+			auto values = GetSteeringAngleFromJetsonAndSetRelays();
+			if (get<0>(values)) {
+				cout << "setting crap" << endl;
+				double steeringAngle = get<1>(values); // Get the steering angle
+				double limitedSteeringAngle = LimitRotation(steeringAngle); // Limit it to avoid damage to the hardware
+				talon->ConfigPeakOutputVoltage(5.5, -5.5); // Turn on the voltage to the motor
+				talon->Set(limitedSteeringAngle); // Turn the steering wheel
+			} else {
+				talon->ConfigPeakOutputVoltage(0, 0); // Disable all voltage to the motor
+			}
 		}
 	}
 
@@ -82,6 +92,18 @@ private:
 		return true;
 	}
 
+	double LimitRotation(double position) {
+		// Limit a rotation value to an absolute value less than or equal to POSITION_LIMIT_ROTATIONS
+		double actualPosition;
+		if (position > POSITION_LIMIT_ROTATIONS)
+			actualPosition = POSITION_LIMIT_ROTATIONS;
+		else if (position < -POSITION_LIMIT_ROTATIONS)
+			actualPosition = -POSITION_LIMIT_ROTATIONS;
+		else
+			actualPosition = position;
+		return actualPosition;
+	}
+
 	void UpdatePositionFile(double talonPosition) {
 		// Save the current motor position prefixed with "out" to a temp file, to be read by the Jetson
 		ofstream encValFile;
@@ -93,7 +115,7 @@ private:
 		system("mv /home/lvuser/temp.encval /home/lvuser/latest.encval");
 	}
 
-	float ReadSteeringAngleFromJetsonAndSetRelays() {
+	tuple<bool, double> GetSteeringAngleFromJetsonAndSetRelays() {
 		// Values for return
 		bool jetsonActive = false; // Is the Jetson alive and working?
 		bool recordingEnabled = false; // Is the Jetson recording encoder values?
@@ -138,11 +160,8 @@ private:
 			cout << "File error caught" << endl;
 		}
 
-		// Set the relays according to the values for return
-		SetRelay(recordingRelay, recordingEnabled);
-		SetRelay(autoDriveRelay, autoDrive);
-
-		if (jetsonActive) {
+		if (jetsonActive) { // If the Jetson is communicating with us
+			// Turn on the applicable relays and reset the timer
 			pastRecordingEnabled = recordingEnabled;
 			pastAutoDrive = autoDrive;
 			pastSteeringAngle = steeringAngle;
@@ -154,14 +173,14 @@ private:
 				SetRelay(communicationRelay, false); // Turn off the jetsonActiveRelay LED
 				pastRecordingEnabled = false;
 				pastAutoDrive = false;
-				pastSteeringAngle = false;
 			}
 		}
 
+		// Set the relays
 		SetRelay(recordingRelay, pastRecordingEnabled);
 		SetRelay(autoDriveRelay, pastAutoDrive);
 
-		return pastSteeringAngle;
+		return make_tuple(pastAutoDrive, pastSteeringAngle);
 	}
 
 	void SetRelay(Relay *relay, bool on) {
