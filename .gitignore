@@ -1,54 +1,45 @@
-
-.metadata
+# WPILib
 bin/
+build/
+dist/
+sysProps.xml
+workbench.xmi
+RemoteSystemsTempFiles
+
+# IDE
+*.ipr
+*.iml
+*.iws
+out/
 tmp/
-*.tmp
-*.bak
-*.swp
-*~.nib
-local.properties
 .settings/
 .loadpath
+.project
 .recommenders
+.metadata
+/.idea
+.classpath
 
-# External tool builders
-.externalToolBuilders/
+# Toast/GradleRIO
+run/
+.gradle/
+gradle/.launch/
 
-# Locally stored "Eclipse launch configurations"
-*.launch
+# OS Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.AppleDouble
+.LSOverride
+.Trashes
+ehthumbs.db
+Thumbs.db
 
-# PyDev specific (Python IDE for Eclipse)
-*.pydevproject
+# backup files
+*~
+*.swp
 
-# CDT-specific (C/C++ Development Tooling)
-.cproject
+# directory for XML generated after running junit tests through ant
+junit/
 
-# Java annotation processor (APT)
-.factorypath
-
-# PDT-specific (PHP Development Tools)
-.buildpath
-
-# sbteclipse plugin
-.target
-
-# Tern plugin
-.tern-project
-
-# TeXlipse plugin
-.texlipse
-
-# STS (Spring Tool Suite)
-.springBeans
-
-# Code Recommenders
-.recommenders/
-
-# Scala IDE specific (Scala & Java development for Eclipse)
-.cache-main
-.scala_dependencies
-.worksheet
-
-
-# WPILib temporary folders
-RemoteSystemsTempFiles
